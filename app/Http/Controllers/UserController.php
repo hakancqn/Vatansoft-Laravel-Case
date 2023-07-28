@@ -5,16 +5,25 @@ namespace App\Http\Controllers;
 use App\Http\Requests\UserRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
-    public function list(){
+    public function list()
+    {
         $users = User::get();
         return $users;
     }
 
-    public function insert(UserRequest $request){
+    public function insert(UserRequest $request)
+    {
         $user = $request->validated();
+
+        $kontrol = User::where('email', $user['email'])->first();
+
+        if ($kontrol) {
+            return 'Bu e-posta başka bir kullanıcı tarafından kullanılıyor. Farklı bir e-posta deneyin.';
+        }
 
         User::create([
             'name' => $user['name'],
@@ -25,33 +34,47 @@ class UserController extends Controller
         return 'Kullanıcı başarıyla oluşturuldu';
     }
 
-    public function update($id, UserRequest $request){
+    public function update($id, UserRequest $request)
+    {
         $user = User::find($id);
         $data = $request->validated();
 
-        $user->name = $data['name'];
-        $user->email = $data['email'];
+        $kontrol = User::where('email', $data['email'])->first();
 
-        $user->save();
+        if ($kontrol) {
+            return 'Bu e-posta başka bir kullanıcı tarafından kullanılıyor. Farklı bir e-posta deneyin.';
+        } else if ($user->email == $data['email']) {
+            return 'Zaten bu e-postayı kullanıyorsunuz.';
+        } else {
+            $user->name = $data['name'];
+            $user->email = $data['email'];
 
-        return 'Kullanıcı başarıyla güncellendi.';
+            $user->save();
+
+            return 'Kullanıcı başarıyla güncellendi.';
+        }
     }
 
-    public function updatepw($id, UserRequest $request){
+    public function updatepw($id, UserRequest $request)
+    {
         $user = User::find($id);
         $data = $request->validated();
+        $oldpw = $data['oldpw'];
 
-        $user->password = $data['password'];
-
-        $user->save();
-
-        return 'Kullanıcı şifresi başarıyla güncellendi.';
+        if (Hash::check($oldpw, $user->password)) {
+            $user->password = $data['password'];
+            $user->save();
+            return 'Kullanıcı şifresi başarıyla güncellendi.';
+        } else {
+            return 'Eski şifreniz yanlış.';
+        }
     }
 
-    public function delete($id){
+    public function delete($id)
+    {
         $user = User::find($id);
 
-        if(!$user){
+        if (!$user) {
             return 'Kullanıcı bulunamadı';
         }
 
@@ -60,10 +83,11 @@ class UserController extends Controller
         return 'Kullanıcı başarıyla silindi.';
     }
 
-    public function destroy($id){
+    public function destroy($id)
+    {
         $user = User::withTrashed()->find($id);
 
-        if(!$user){
+        if (!$user) {
             return 'Kullanıcı bulunamadı';
         }
 

@@ -25,21 +25,21 @@ class UserRequest extends FormRequest
         if ($this->is('user/insert')) {
             return [
                 'name' => 'required|string|max:255',
-                'email' => 'required|email|unique:users,email',
+                'email' => 'required|email',
                 'password' => 'required|string|min:8',
             ];
         }
 
         if ($this->is('user/update/*')) {
-            $userId = $this->segment(2);
             return [
                 'name' => 'required|string|max:255',
-                'email' => 'required|email|unique:users,email,' . $userId,
+                'email' => 'required|email',
             ];
         }
 
         if ($this->is('user/updatepw/*')) {
             return [
+                'oldpw' => 'required|string|min:8',
                 'password' => 'required|string|min:8',
             ];
         }
